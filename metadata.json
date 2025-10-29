@@ -1,0 +1,7 @@
+{
+  "name": "Gemini Avatar Teacher",
+  "description": "An interactive AI avatar teacher that lectures on user-provided documents using real-time voice conversation powered by the Gemini Live API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
