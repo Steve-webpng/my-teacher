@@ -36,7 +36,6 @@ export const Controls: React.FC<ControlsProps> = ({
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept=".txt,.md"
       />
       <button
         onClick={handleUploadClick}

@@ -7,7 +7,7 @@ export interface TranscriptMessage {
 export interface AvatarState {
   isSpeaking: boolean;
   isTurned: boolean;
-  emotion: 'neutral' | 'talking' | 'thinking';
+  emotion: 'neutral' | 'talking' | 'thinking' | 'laughing';
   gesture: 'none' | 'point' | 'explain';
 }
 

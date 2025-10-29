@@ -17,6 +17,7 @@ const App: React.FC = () => {
   // Refactored avatar state for more granular control
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isTurned, setIsTurned] = useState(false);
+  const [isLaughing, setIsLaughing] = useState(false);
   const [gesture, setGesture] = useState<'none' | 'point' | 'explain'>('none');
 
   const sessionRef = useRef<LiveSession | null>(null);
@@ -74,6 +75,7 @@ const App: React.FC = () => {
     setIsSpeaking(false);
     setIsTurned(false);
     setGesture('none');
+    setIsLaughing(false);
   }, []);
 
   const startSession = useCallback(async () => {
@@ -98,10 +100,10 @@ const App: React.FC = () => {
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
           responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          systemInstruction: `You are an engaging and friendly teacher in a classroom. Your task is to lecture and explain the following document to a student. Break it down into smaller, digestible parts. After explaining a part, ask the student if they understand or have any questions, then wait for their response. Do not proceed until you get a response. Be conversational. Here is the document: \n\n---DOCUMENT---\n${documentContent}\n---END DOCUMENT---`,
+          systemInstruction: `You are a very friendly and engaging teacher from Uganda. Your name is Ms. Akiiki. You have a warm, cheerful voice and a slight, pleasant Ugandan accent. You love to make your students laugh with relevant, funny jokes or amusing analogies related to the subject matter. When you make a joke, say "[laughs]" right after. Your primary task is to lecture and explain the following document to a student. Break it down into smaller, digestible parts. After explaining a part, ask the student warmly if they understand or have any questions, like "Does that make sense, dear?" or "Are you with me so far?". Wait for their response. Do not proceed until you get a response. Be conversational and encouraging. Here is the document: \n\n---DOCUMENT---\n${documentContent}\n---END DOCUMENT---`,
         },
         callbacks: {
           onopen: async () => {
@@ -130,14 +132,20 @@ const App: React.FC = () => {
               currentInputTranscription += message.serverContent.inputTranscription.text;
             }
             if (message.serverContent?.outputTranscription) {
-              currentOutputTranscription += message.serverContent.outputTranscription.text;
+              const textChunk = message.serverContent.outputTranscription.text;
+              currentOutputTranscription += textChunk;
+              if (textChunk.toLowerCase().includes('[laughs]')) {
+                setIsLaughing(true);
+                setTimeout(() => setIsLaughing(false), 2500); // Laugh for 2.5 seconds
+              }
             }
             if (message.serverContent?.turnComplete) {
               if (currentInputTranscription.trim()) {
                 setTranscripts(prev => [...prev, { author: 'user', text: currentInputTranscription.trim() }]);
               }
               if (currentOutputTranscription.trim()) {
-                setTranscripts(prev => [...prev, { author: 'teacher', text: currentOutputTranscription.trim() }]);
+                const cleanedText = currentOutputTranscription.trim().replace(/\[laughs\]/gi, '😂');
+                setTranscripts(prev => [...prev, { author: 'teacher', text: cleanedText }]);
               }
               currentInputTranscription = '';
               currentOutputTranscription = '';
@@ -191,19 +199,19 @@ const App: React.FC = () => {
   // Effect for managing avatar gestures while speaking
   useEffect(() => {
     let gestureInterval: ReturnType<typeof setInterval> | undefined;
-    if (isSpeaking) {
+    if (isSpeaking && !isLaughing) {
       gestureInterval = setInterval(() => {
         const gestures: Array<'point' | 'explain' | 'none'> = ['point', 'explain', 'none'];
         const randomGesture = gestures[Math.floor(Math.random() * gestures.length)];
         setGesture(randomGesture);
       }, 2000); // Change gesture every 2 seconds
     } else {
-      setGesture('none'); // Reset gesture when not speaking
+      setGesture('none'); // Reset gesture when not speaking or when laughing
     }
     return () => {
       if (gestureInterval) clearInterval(gestureInterval);
     };
-  }, [isSpeaking]);
+  }, [isSpeaking, isLaughing]);
 
   // Effect for making the avatar turn to the board when idle
   useEffect(() => {
@@ -224,7 +232,7 @@ const App: React.FC = () => {
     isSpeaking,
     isTurned,
     gesture,
-    emotion: isSpeaking ? 'talking' : 'neutral',
+    emotion: isLaughing ? 'laughing' : (isSpeaking ? 'talking' : 'neutral'),
   };
 
   return (
